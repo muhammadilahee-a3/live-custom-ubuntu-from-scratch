@@ -56,8 +56,8 @@ mkdir $HOME/live-ubuntu-from-scratch
   ```shell
   sudo debootstrap \
      --arch=amd64 \
-     --variant=minbase \
-     focal \
+     --variant=buildd \
+     jammy \
      $HOME/live-ubuntu-from-scratch/chroot \
      http://us.archive.ubuntu.com/ubuntu/
   ```
@@ -114,14 +114,55 @@ From this point we will be configuring the `live system`.
 
    ```shell
    cat <<EOF > /etc/apt/sources.list
-   deb http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
-   deb-src http://us.archive.ubuntu.com/ubuntu/ focal main restricted universe multiverse
+   #deb cdrom:[Ubuntu 22.04.4 LTS _Jammy Jellyfish_ - Release amd64 (20240220)]/ jammy main restricted
+   # See http://help.ubuntu.com/community/UpgradeNotes for how to upgrade to
+   # newer versions of the distribution.
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy main restricted
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy main restricted
 
-   deb http://us.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
-   deb-src http://us.archive.ubuntu.com/ubuntu/ focal-security main restricted universe multiverse
+   ## Major bug fix updates produced after the final release of the
+   ## distribution.
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy-updates main restricted
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy-updates main restricted
 
-   deb http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse
-   deb-src http://us.archive.ubuntu.com/ubuntu/ focal-updates main restricted universe multiverse
+   ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+   ## team. Also, please note that software in universe WILL NOT receive any
+   ## review or updates from the Ubuntu security team.
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy universe
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy universe
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy-updates universe
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy-updates universe
+
+   ## N.B. software from this repository is ENTIRELY UNSUPPORTED by the Ubuntu
+   ## team, and may not be under a free licence. Please satisfy yourself as to
+   ## your rights to use the software. Also, please note that software in
+   ## multiverse WILL NOT receive any review or updates from the Ubuntu
+   ## security team.
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy multiverse
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy multiverse
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy-updates multiverse
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy-updates multiverse
+
+   ## N.B. software from this repository may not have been tested as
+   ## extensively as that contained in the main release, although it includes
+   ## newer versions of some applications which may provide useful features.
+   ## Also, please note that software in backports WILL NOT receive any review
+   ## or updates from the Ubuntu security team.
+   deb http://us.archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
+   # deb-src http://us.archive.ubuntu.com/ubuntu/ jammy-backports main restricted universe multiverse
+
+   deb http://security.ubuntu.com/ubuntu jammy-security main restricted
+   # deb-src http://security.ubuntu.com/ubuntu jammy-security main restricted
+   deb http://security.ubuntu.com/ubuntu jammy-security universe
+   # deb-src http://security.ubuntu.com/ubuntu jammy-security universe
+   deb http://security.ubuntu.com/ubuntu jammy-security multiverse
+   # deb-src http://security.ubuntu.com/ubuntu jammy-security multiverse
+
+   # This system was installed using small removable media
+   # (e.g. netinst, live or single CD). The matching "deb cdrom"
+   # entries were disabled at the end of the installation process.
+   # For information about how to configure apt package sources,
+   # see the sources.list(5) manual.
    EOF
    ```
 
@@ -170,7 +211,6 @@ From this point we will be configuring the `live system`.
        sudo \
        ubuntu-standard \
        casper \
-       lupin-casper \
        discover \
        laptop-detect \
        os-prober \
@@ -289,8 +329,27 @@ From this point we will be configuring the `live system`.
         openjdk-8-jdk \
         openjdk-8-jre
     ```
+16. **Install Docker (optional)**
 
-16. **Remove unused applications (optional)**
+    ```shell
+    for pkg in docker.io docker-doc docker-compose docker-compose-v2 podman-docker containerd runc; do apt-get remove $pkg; done
+    # Add Docker's official GPG key:
+      apt-get update
+      apt-get install ca-certificates curl
+      install -m 0755 -d /etc/apt/keyrings
+      curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
+      chmod a+r /etc/apt/keyrings/docker.asc
+
+      # Add the repository to Apt sources:
+      echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
+      $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
+      tee /etc/apt/sources.list.d/docker.list > /dev/null
+      apt-get update
+
+      apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    ```
+17. **Remove unused applications (optional)**
 
     ```shell
     apt-get purge -y \
@@ -303,13 +362,13 @@ From this point we will be configuring the `live system`.
         hitori
     ```
 
-17. **Remove unused packages**
+18. **Remove unused packages**
 
     ```shell
     apt-get autoremove -y
     ```
 
-18. **Reconfigure packages**
+19. **Reconfigure packages**
 
    1. Generate locales
 
@@ -366,7 +425,7 @@ From this point we will be configuring the `live system`.
       dpkg-reconfigure network-manager
       ```
 
-19. **Cleanup the chroot environment**
+20. **Cleanup the chroot environment**
 
    1. If you installed software, be sure to run
 
