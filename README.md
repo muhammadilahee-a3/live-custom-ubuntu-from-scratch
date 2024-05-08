@@ -215,6 +215,7 @@ From this point we will be configuring the `live system`.
        laptop-detect \
        os-prober \
        network-manager \
+       netplan.io \
        resolvconf \
        net-tools \
        wireless-tools \
